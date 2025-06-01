@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
-import { setAuthHeader } from '../../shared/auth';
 
 const Login = () => {
     const [formData, setFormData] = useState({
-        login: '',
+        login: '', // Изменено с username на login
         password: ''
     });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
+
+
+
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -23,18 +25,18 @@ const Login = () => {
         try {
             const response = await fetch('http://192.168.195.23:8080/api/auth/login', {
                 method: 'POST',
-                mode: 'cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    login: formData.login, // Используем login вместо username
+                    password: formData.password
+                })
             });
 
-            // Получаем сырой текст ответа для диагностики
             const responseText = await response.text();
             console.log('Сырой ответ сервера:', responseText);
 
-            // Пытаемся распарсить JSON
             let data = {};
             if (responseText) {
                 try {
@@ -46,34 +48,30 @@ const Login = () => {
                 }
             }
 
+            console.log('Структура ответа:', {
+                status: response.status,
+                ok: response.ok,
+                data: data
+            });
+
             if (response.ok) {
-                // Проверяем наличие токена в ответе
                 const token = data.token || data.accessToken || data.access_token;
+                const user = data.user || data.userData || {};
+
                 if (!token) {
                     throw new Error('Токен не найден в ответе сервера');
                 }
 
-                // Проверяем наличие информации о пользователе
-                const user = data.user || data.userData || data;
-                if (!user || !user.username) {
-                    console.warn('Данные пользователя неполные:', user);
-                }
-
-                // Сохраняем токен и данные пользователя
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('user', JSON.stringify(user));
-                setAuthHeader(token);
+                localStorage.setItem('jwt', token);
 
-                // Приветствуем пользователя (с проверкой на наличие username)
-                const username = user?.username || 'пользователь';
+                const username = user.username || user.login || 'пользователь';
                 setMessage(`Добро пожаловать, ${username}!`);
-
-                // Перенаправляем на защищенную страницу
                 navigate('/home');
             } else {
-                // Обработка ошибок сервера
-                const errorMsg = data.message || data.error || response.statusText;
-                setMessage(`Ошибка сервера: ${errorMsg}`);
+                const errorMsg = data.message || data.error || data.reason || response.statusText;
+                setMessage(`Ошибка: ${errorMsg}`);
             }
         } catch (err) {
             console.error('Полная ошибка:', err);
@@ -91,12 +89,13 @@ const Login = () => {
                 <h2 className={styles.title}>Вход в систему</h2>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
+                    {/* Изменено id="username" на id="login" */}
                     <input
-                        id="username"
+                        id="login"
                         className={styles.inputField}
                         type="text"
                         placeholder="Логин"
-                        value={formData.username}
+                        value={formData.login}
                         onChange={handleChange}
                         required
                         autoFocus

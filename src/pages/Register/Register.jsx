@@ -1,13 +1,15 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './Register.module.css';
+
 const Register = () => {
     const [formData, setFormData] = useState({
-        username: '',
+        name: '',
         login: '',
         password: ''
     });
     const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -16,60 +18,84 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setMessage('Обработка запроса...');
+        setMessage('Регистрация...');
 
         try {
-            // Отправка POST-запроса с CORS заголовками
-            const response = await fetch('https://your-api-domain.com/register', {
-                method: 'POST',
-                mode: 'cors', // Явное указание режима CORS
+            // Формируем URL с query-параметрами
+            const url = new URL('http://192.168.195.23:8080/api/users/register');
+            url.searchParams.append('password', formData.password);
+
+            const response = await fetch(url, {
+                method: 'POST', // Или GET, в зависимости от требований сервера
                 headers: {
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*' // Разрешение для всех доменов
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    name: formData.name,
+                    login: formData.login
+                })
+            });
+
+            const responseText = await response.text();
+            console.log('Сырой ответ сервера:', responseText);
+
+            let data = {};
+            if (responseText) {
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('Ошибка парсинга JSON:', jsonError);
+                    setMessage('Ошибка: Невалидный JSON в ответе сервера');
+                    return;
+                }
+            }
+
+            console.log('Структура ответа:', {
+                status: response.status,
+                ok: response.ok,
+                data: data
             });
 
             if (response.ok) {
-                const data = await response.json();
-                setMessage(`Регистрация успешна! Добро пожаловать, ${data.username}`);
-                // Перенаправление на другую страницу
-                window.location.href = '/';
+                // Перенаправляем на страницу входа с сообщением
+                navigate('/login', {
+                    state: {
+                        registrationSuccess: true,
+                        login: formData.login
+                    }
+                });
             } else {
-                const error = await response.json();
-                setMessage(`Ошибка: ${error.message || response.statusText}`);
+                const errorMsg = data.message || data.error || data.reason || response.statusText;
+                setMessage(`Ошибка регистрации: ${errorMsg}`);
             }
         } catch (err) {
-            setMessage('Сетевая ошибка: ' + err.message);
+            console.error('Полная ошибка:', err);
+            setMessage(`Сетевая ошибка: ${err.message}`);
         }
     };
 
     const handleBack = () => {
-        // GET запрос для страницы входа
-        window.location.href = '/login';
+        navigate('/login');
     };
 
-
-
     return (
-        <div className="register-container">
-
+        <div className={styles.registerContainer}>
             <div className={styles.vboxContainer}>
-                <h2>Введите данные, чтобы зарегистрироваться</h2>
+                <h2 className={styles.title}>Регистрация</h2>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} className={styles.form}>
                     <input
-                        id="usernameField"
+                        id="name"
                         className={styles.inputField}
                         type="text"
                         placeholder="Имя"
-                        value={formData.username}
+                        value={formData.name}
                         onChange={handleChange}
                         required
                     />
 
                     <input
-                        id="loginField"
+                        id="login"
                         className={styles.inputField}
                         type="text"
                         placeholder="Логин"
@@ -79,7 +105,7 @@ const Register = () => {
                     />
 
                     <input
-                        id="passwordField"
+                        id="password"
                         className={styles.inputField}
                         type="password"
                         placeholder="Пароль"
@@ -89,13 +115,13 @@ const Register = () => {
                     />
 
                     <div className={styles.buttonsContainer}>
-                        <button type="submit" className={styles.btnPrimary}>
+                        <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>
                             Зарегистрироваться
                         </button>
 
                         <button
                             type="button"
-                            className={styles.btnSecondary}
+                            className={`${styles.btn} ${styles.btnSecondary}`}
                             onClick={handleBack}
                         >
                             Назад
@@ -103,7 +129,7 @@ const Register = () => {
                     </div>
                 </form>
 
-                <div className={styles.message}>{message}</div>
+                {message && <div className={styles.message}>{message}</div>}
             </div>
         </div>
     );
