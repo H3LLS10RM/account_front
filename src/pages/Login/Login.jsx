@@ -1,6 +1,7 @@
-// Login.jsx
 import React, { useState } from 'react';
-import styles from './Login.module.css'; // Используем те же стили
+import { useNavigate } from 'react-router-dom';
+import styles from './Login.module.css';
+import { setAuthHeader } from '../../shared/auth';
 
 const Login = () => {
     const [formData, setFormData] = useState({
@@ -8,6 +9,7 @@ const Login = () => {
         password: ''
     });
     const [message, setMessage] = useState('');
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -19,8 +21,7 @@ const Login = () => {
         setMessage('Вход в систему...');
 
         try {
-            // Отправка POST-запроса для авторизации
-            const response = await fetch('https://your-api-domain.com/login', {
+            const response = await fetch('http://192.168.195.23:8080/api/auth/login', {
                 method: 'POST',
                 mode: 'cors',
                 headers: {
@@ -29,40 +30,73 @@ const Login = () => {
                 body: JSON.stringify(formData)
             });
 
+            // Получаем сырой текст ответа для диагностики
+            const responseText = await response.text();
+            console.log('Сырой ответ сервера:', responseText);
+
+            // Пытаемся распарсить JSON
+            let data = {};
+            if (responseText) {
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('Ошибка парсинга JSON:', jsonError);
+                    setMessage('Ошибка: Невалидный JSON в ответе сервера');
+                    return;
+                }
+            }
+
             if (response.ok) {
-                const data = await response.json();
-                setMessage(`Добро пожаловать, ${data.username}!`);
+                // Проверяем наличие токена в ответе
+                const token = data.token || data.accessToken || data.access_token;
+                if (!token) {
+                    throw new Error('Токен не найден в ответе сервера');
+                }
 
-                // Сохраняем токен в localStorage
-                localStorage.setItem('authToken', data.token);
+                // Проверяем наличие информации о пользователе
+                const user = data.user || data.userData || data;
+                if (!user || !user.username) {
+                    console.warn('Данные пользователя неполные:', user);
+                }
 
-                // Перенаправление после успешного входа
-                window.location.href = '/dashboard';
+                // Сохраняем токен и данные пользователя
+                localStorage.setItem('authToken', token);
+                localStorage.setItem('user', JSON.stringify(user));
+                setAuthHeader(token);
+
+                // Приветствуем пользователя (с проверкой на наличие username)
+                const username = user?.username || 'пользователь';
+                setMessage(`Добро пожаловать, ${username}!`);
+
+                // Перенаправляем на защищенную страницу
+                navigate('/home');
             } else {
-                const error = await response.json();
-                setMessage(`Ошибка: ${error.message || 'Неверные учетные данные'}`);
+                // Обработка ошибок сервера
+                const errorMsg = data.message || data.error || response.statusText;
+                setMessage(`Ошибка сервера: ${errorMsg}`);
             }
         } catch (err) {
-            setMessage('Сетевая ошибка: ' + err.message);
+            console.error('Полная ошибка:', err);
+            setMessage(`Ошибка: ${err.message}`);
         }
     };
 
     const handleRegister = () => {
-        window.location.href = '/register';
+        navigate('/register');
     };
 
     return (
-        <div className={styles.loginContainer}>
+        <div className={styles.registerContainer}>
             <div className={styles.vboxContainer}>
                 <h2 className={styles.title}>Вход в систему</h2>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <input
-                        id="login"
+                        id="username"
                         className={styles.inputField}
                         type="text"
                         placeholder="Логин"
-                        value={formData.login}
+                        value={formData.username}
                         onChange={handleChange}
                         required
                         autoFocus
