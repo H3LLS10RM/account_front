@@ -4,14 +4,11 @@ import styles from './Login.module.css';
 
 const Login = () => {
     const [formData, setFormData] = useState({
-        login: '', // Изменено с username на login
+        login: '',
         password: ''
     });
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
-
-
-
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -29,7 +26,7 @@ const Login = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    login: formData.login, // Используем login вместо username
+                    login: formData.login,
                     password: formData.password
                 })
             });
@@ -48,12 +45,6 @@ const Login = () => {
                 }
             }
 
-            console.log('Структура ответа:', {
-                status: response.status,
-                ok: response.ok,
-                data: data
-            });
-
             if (response.ok) {
                 const token = data.token || data.accessToken || data.access_token;
                 const user = data.user || data.userData || {};
@@ -64,7 +55,6 @@ const Login = () => {
 
                 localStorage.setItem('authToken', token);
                 localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('jwt', token);
 
                 const username = user.username || user.login || 'пользователь';
                 setMessage(`Добро пожаловать, ${username}!`);
@@ -89,7 +79,6 @@ const Login = () => {
                 <h2 className={styles.title}>Вход в систему</h2>
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    {/* Изменено id="username" на id="login" */}
                     <input
                         id="login"
                         className={styles.inputField}

@@ -1,0 +1,47 @@
+.container {
+    width: 220px;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background-color: #007bff;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 255, 0.1);
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+input,
+select,
+button {
+    width: 100%;
+    max-width: 180px;
+    padding: 6px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.buttonRow {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    width: 100%;
+}

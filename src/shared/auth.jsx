@@ -1,16 +1,12 @@
 
+
 export const initializeAuth = () => {
-
-};
-
-export const setAuthHeader = () => {
-    // Больше не переопределяем fetch
+    // Можно добавить логику инициализации позже
 };
 
 export const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
-    localStorage.removeItem('jwt');
     window.location.href = '/login';
 };
 
@@ -20,5 +16,5 @@ export const getCurrentUser = () => {
 };
 
 export const getToken = () => {
-    return localStorage.getItem('jwt') || localStorage.getItem('authToken');
+    return localStorage.getItem('authToken');
 };
